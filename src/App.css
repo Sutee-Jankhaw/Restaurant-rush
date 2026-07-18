@@ -1,0 +1,12 @@
+.header {
+    font-size: 50px;
+}
+
+.start {
+    background-color: #3fe645;
+    color: white;
+}
+
+.start:hover {
+    background-color: #26b72c;
+}
