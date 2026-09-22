@@ -6,6 +6,11 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 import type { Order, OrderItem } from "@/interfaces/order";
 import type { CartItem } from "@/interfaces/cart";
 import { useState } from "react";
@@ -98,9 +103,43 @@ const removeFromCart = (productId: number) => {
     )
   );
 };
+const checkOrder = () => {
+  if (cart.length !== order.items.length) {
+    return false;
+  }
+  return order.items.every((orderItem) => {
+    const cartItem = cart.find(
+      (item) => item.productId === orderItem.productId
+    );
+
+    if (!cartItem) {
+      return false;
+    }
+    return cartItem.quantity === orderItem.quantity;
+  });
+};
+const [alert, setAlert] = useState<{
+  type: "success" | "error";
+  message: string;
+} | null>(null);
+
+const serveOrder = () => {
+  const isCorrect = checkOrder();
+
+  if (isCorrect) {
+    setAlert({
+      type: "success",
+      message: "Order ถูกต้อง! 🎉",
+    });
+  } else {
+    setAlert({
+      type: "error",
+      message: "Order ไม่ถูกต้อง ❌",
+    });
+  }
+};
 const [cart, setCart] = useState<CartItem[]>([]);
 const [order] = useState<Order>(() => createOrder());
-console.log(order)
   return (
     <div>
       <div className="grid grid-cols-4 gap-6 m-10">
@@ -180,7 +219,25 @@ console.log(order)
               })
             )}
           </CardContent>
+          <CardFooter>
+            <Button onClick={serveOrder}>
+              Serve
+            </Button>
+          </CardFooter>
         </Card>
+        {alert && (
+          <Alert
+            variant={alert.type === "error" ? "destructive" : "default"}
+            className="mb-5"
+          >
+            <AlertTitle>
+              {alert.type === "success" ? "Success" : "Error"}
+            </AlertTitle>
+            <AlertDescription>
+              {alert.message}
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-6 m-10">
         {products.map((product) => (
