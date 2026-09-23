@@ -6,14 +6,10 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
+import { toast } from "sonner";
 import type { Order, OrderItem } from "@/interfaces/order";
 import type { CartItem } from "@/interfaces/cart";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 function Game() {
@@ -31,7 +27,7 @@ const createOrder = (): Order => {
       item => item.productId === product.id
     );
     if (existingItem) {
-      existingItem.quantity += 1
+      existingItem.quantity += quantity
     } else {
         items.push({
         productId: products[randomIndex].id,
@@ -40,7 +36,7 @@ const createOrder = (): Order => {
     }
   }
   const newOrder: Order = {
-    id: Date.now(),
+    id: 0,
     items: items,
   };
   return newOrder;
@@ -103,6 +99,24 @@ const removeFromCart = (productId: number) => {
     )
   );
 };
+const nextOrder = () => {
+  setOrder(createOrder());
+  setOrderLeft(count => count - 1);
+  setCart([]);
+  setTime(10);
+};
+const serveOrder = () => {
+  const isCorrect = checkOrder();
+  if (isCorrect) {
+    toast.success("Order ถูกต้อง! 🎉");
+  } else {
+    toast.error("Order ไม่ถูกต้อง ❌");
+  }
+  setTimeout(() => {
+    nextOrder();
+  }, 100);
+  setTime(10);
+};
 const checkOrder = () => {
   if (cart.length !== order.items.length) {
     return false;
@@ -118,28 +132,34 @@ const checkOrder = () => {
     return cartItem.quantity === orderItem.quantity;
   });
 };
-const [alert, setAlert] = useState<{
-  type: "success" | "error";
-  message: string;
-} | null>(null);
-
-const serveOrder = () => {
-  const isCorrect = checkOrder();
-
-  if (isCorrect) {
-    setAlert({
-      type: "success",
-      message: "Order ถูกต้อง! 🎉",
-    });
-  } else {
-    setAlert({
-      type: "error",
-      message: "Order ไม่ถูกต้อง ❌",
-    });
-  }
-};
+const [orderLeft, setOrderLeft] = useState(15);
 const [cart, setCart] = useState<CartItem[]>([]);
-const [order] = useState<Order>(() => createOrder());
+const [order, setOrder] = useState<Order>(() => createOrder());
+const [time, setTime] = useState(10);
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    setTime((currentTime) => {
+      if (currentTime <= 1) {
+        return 0;
+      }
+      return currentTime - 1;
+    });
+  }, 1000);
+
+  return () => {
+    clearInterval(timer);
+  };
+},[]);
+useEffect(() => {
+  if (orderLeft !== 0){
+    if (time !== 0) return;
+    setOrder(createOrder());
+    setOrderLeft(count => Math.max(0, count - 1));
+    setCart([]);
+    setTime(10);
+  }
+}, [time]);
   return (
     <div>
       <div className="grid grid-cols-4 gap-6 m-10">
@@ -167,6 +187,9 @@ const [order] = useState<Order>(() => createOrder());
               );
             })}
           </CardContent>
+          <CardFooter>
+            { time }
+          </CardFooter>
         </Card>
         <Card>
         <CardHeader>
@@ -225,19 +248,7 @@ const [order] = useState<Order>(() => createOrder());
             </Button>
           </CardFooter>
         </Card>
-        {alert && (
-          <Alert
-            variant={alert.type === "error" ? "destructive" : "default"}
-            className="mb-5"
-          >
-            <AlertTitle>
-              {alert.type === "success" ? "Success" : "Error"}
-            </AlertTitle>
-            <AlertDescription>
-              {alert.message}
-            </AlertDescription>
-          </Alert>
-        )}
+          Order Left:{ orderLeft }
       </div>
       <div className="grid grid-cols-3 gap-6 m-10">
         {products.map((product) => (
